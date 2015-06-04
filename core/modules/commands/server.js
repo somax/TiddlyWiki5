@@ -300,7 +300,9 @@ Command.prototype.execute = function() {
 		serveType = this.params[3] || "text/html",
 		username = this.params[4],
 		password = this.params[5],
-		host = this.params[6] || "127.0.0.1",
+		// https://nodejs.org/api/http.html#http_server_listen_port_hostname_backlog_callback
+		// ...if the hostname is omitted, the server will accept connections directed to any IPv4 address 
+		host = this.params[6] || "",// "127.0.0.1",
 		pathprefix = this.params[7];
 	this.server.set({
 		rootTiddler: rootTiddler,
