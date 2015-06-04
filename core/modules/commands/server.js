@@ -6,6 +6,9 @@ module-type: command
 Serve tiddlers over http
 
 \*/
+
+
+
 (function(){
 
 /*jslint node: true, browser: true */
@@ -18,8 +21,13 @@ if(!$tw.browser) {
 		url = require("url"),
 		path = require("path"),
 		zlib = require("zlib"),
-		http = require("http");	
+		http = require("http"),
+		https = require("https");
+
+	var isHttps = false;
 }
+
+
 
 exports.info = {
 	name: "server",
@@ -94,7 +102,18 @@ SimpleServer.prototype.checkCredentials = function(request,incomingUsername,inco
 
 SimpleServer.prototype.listen = function(port,host) {
 	var self = this;
-	http.createServer(function(request,response) {
+	var options = {};
+	// if got cert file then serv with https, otherwise use http
+	try{
+		options.key = fs.readFileSync('./cert/key.pem');
+		options.cert = fs.readFileSync('./cert/cert.pem');
+		https.createServer(options,serverHandle).listen(port,host);
+		isHttps = true;
+	}catch(error){
+		http.createServer(serverHandle).listen(port,host);
+	}
+
+	function serverHandle(request,response) {
 		// Compose the state object
 		var state = {};
 		state.wiki = self.wiki;
@@ -142,7 +161,7 @@ SimpleServer.prototype.listen = function(port,host) {
 				});
 				break;
 		}
-	}).listen(port,host);
+	}
 };
 
 var Command = function(params,commander,callback) {
@@ -313,7 +332,7 @@ Command.prototype.execute = function() {
 		pathprefix: pathprefix
 	});
 	this.server.listen(port,host);
-	console.log("Serving on " + host + ":" + port);
+	console.log("Serving on "+ ((isHttps)?"https://":"http://") + (host ||"0.0.0.0") + ":" + port);
 	console.log("(press ctrl-C to exit)");
 	// Warn if required plugins are missing
 	if($tw.boot.wikiInfo.plugins.indexOf("tiddlywiki/tiddlyweb") === -1 || $tw.boot.wikiInfo.plugins.indexOf("tiddlywiki/filesystem") === -1) {
